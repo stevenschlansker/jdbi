@@ -13,6 +13,14 @@
  */
 package org.skife.jdbi.v2;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.skife.jdbi.v2.tweak.ResultColumnMapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import org.skife.jdbi.v2.tweak.SQLLog;
@@ -21,14 +29,6 @@ import org.skife.jdbi.v2.tweak.StatementCustomizer;
 import org.skife.jdbi.v2.tweak.StatementLocator;
 import org.skife.jdbi.v2.tweak.StatementRewriter;
 import org.skife.jdbi.v2.util.SingleColumnMapper;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Statement providing convenience result handling for SQL queries.
@@ -75,10 +75,7 @@ public class Query<ResultType> extends SQLStatement<Query<ResultType>> implement
         return list(List.class);
     }
 
-    @Override
-    public <ContainerType> ContainerType list(Class<ContainerType> containerType)
-    {
-        ContainerBuilder<ContainerType> builder = getContainerMapperRegistry().createBuilderFor(containerType);
+    public <ContainerType> ContainerType collect(ContainerBuilder<ContainerType> builder) {
         return fold(builder, new Folder3<ContainerBuilder<ContainerType>, ResultType>()
         {
             @Override
@@ -91,6 +88,13 @@ public class Query<ResultType> extends SQLStatement<Query<ResultType>> implement
                 return accumulator;
             }
         }).build();
+    }
+
+    @Override
+    public <ContainerType> ContainerType list(Class<ContainerType> containerType)
+    {
+        ContainerBuilder<ContainerType> builder = getContainerMapperRegistry().createBuilderFor(containerType);
+        return collect(builder);
     }
 
     /**
@@ -207,6 +211,7 @@ public class Query<ResultType> extends SQLStatement<Query<ResultType>> implement
      * @see org.skife.jdbi.v2.Folder
      * @deprecated Use {@link Query#fold(Object, Folder2)}
      */
+    @Deprecated
     public <AccumulatorType> AccumulatorType fold(AccumulatorType accumulator, final Folder<AccumulatorType> folder)
     {
         final AtomicReference<AccumulatorType> acc = new AtomicReference<AccumulatorType>(accumulator);
